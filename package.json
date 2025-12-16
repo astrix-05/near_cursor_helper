@@ -1,0 +1,44 @@
+{
+  "name": "near-cursor-helper",
+  "displayName": "NEAR Cursor Helper",
+  "description": "Cursor/VS Code helper for NEAR Rust contract scaffolding and deploy",
+  "version": "0.0.1",
+  "publisher": "workspace",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:nearCursor.newRustContract",
+    "onCommand:nearCursor.buildAndDeploy"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nearCursor.newRustContract",
+        "title": "NEAR: New Rust Contract (Cursor)"
+      },
+      {
+        "command": "nearCursor.buildAndDeploy",
+        "title": "NEAR: Build & Deploy to Testnet (Cursor)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "echo 'no lint configured'",
+    "typecheck": "tsc -p ./ --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.6.3"
+  }
+}
+
