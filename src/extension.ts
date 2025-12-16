@@ -87,13 +87,6 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage("Build failed");
       return;
     }
-    const scriptPath = path.join(targetFolder, "scripts", "deploy_testnet.sh");
-    try {
-      await runCommandInOutput(scriptPath, [], targetFolder, channel);
-      vscode.window.showInformationMessage("Deploy finished");
-    } catch (err) {
-      vscode.window.showErrorMessage("Deploy script failed");
-    }
   });
 
   context.subscriptions.push(newRust, buildDeploy, channel, diagnostics);
@@ -112,14 +105,13 @@ async function createNearRustTemplateFromFiles(extPath: string, baseDir: string,
   await fs.mkdir(path.join(projectDir, "scripts"), { recursive: true });
   const cargo = await readTemplateFile(extPath, "Cargo.toml");
   const lib = await readTemplateFile(extPath, path.join("src", "lib.rs"));
-  const deploy = await readTemplateFile(extPath, path.join("scripts", "deploy_testnet.sh"));
+  const build = await readTemplateFile(extPath, path.join("scripts", "build.sh"));
   const cargoOut = cargo.replace(/\{\{crate_name\}\}/g, name);
   const libOut = lib.replace(/\{\{crate_name\}\}/g, name);
-  const deployOut = deploy.replace(/\{\{crate_name\}\}/g, name);
   await writeFile(path.join(projectDir, "Cargo.toml"), cargoOut);
   await writeFile(path.join(projectDir, "src", "lib.rs"), libOut);
-  await writeFile(path.join(projectDir, "scripts", "deploy_testnet.sh"), deployOut);
-  await fs.chmod(path.join(projectDir, "scripts", "deploy_testnet.sh"), 0o755);
+  await writeFile(path.join(projectDir, "scripts", "build.sh"), build);
+  await fs.chmod(path.join(projectDir, "scripts", "build.sh"), 0o755);
   return projectDir;
 }
 
