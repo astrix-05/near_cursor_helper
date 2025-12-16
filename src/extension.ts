@@ -63,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage("Folder already exists");
         return;
       } catch {}
-      const dir = await createNearRustTemplate(root, name);
+      const dir = await createNearRustTemplateFromFiles(context.extensionPath, root, name);
       vscode.window.showInformationMessage(`Created NEAR Rust contract at ${dir}`);
     } catch (e) {
       vscode.window.showErrorMessage(String(e));
@@ -71,19 +71,19 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   const buildDeploy = vscode.commands.registerCommand("nearCursor.buildAndDeploy", async () => {
-    const wf = vscode.workspace.workspaceFolders;
-    if (!wf || wf.length === 0) {
-      vscode.window.showErrorMessage("No workspace folder open");
-      return;
-    }
     channel.show(true);
     diagnostics.clear();
-    const folder = await detectContractFolder(wf[0].uri.fsPath);
-    const targetFolder = folder || (await promptForCargoFolder());
+    const targetFolder = await promptForCargoFolder();
     if (!targetFolder) return;
-    const cargoArgs = ["build", "--target", "wasm32-unknown-unknown", "--release", "--message-format", "json"];
-    const buildOk = await runCargoBuildCollectDiagnostics(targetFolder, cargoArgs, channel, diagnostics);
-    if (!buildOk) {
+    try {
+      const cargoArgs = ["build", "--target", "wasm32-unknown-unknown", "--release", "--message-format", "json"];
+      const buildOk = await runCargoBuildCollectDiagnostics(targetFolder, cargoArgs, channel, diagnostics);
+      if (!buildOk) {
+        vscode.window.showErrorMessage("Build failed");
+        return;
+      }
+      vscode.window.showInformationMessage("Build succeeded");
+    } catch (err) {
       vscode.window.showErrorMessage("Build failed");
       return;
     }
@@ -91,7 +91,7 @@ export function activate(context: vscode.ExtensionContext) {
     try {
       await runCommandInOutput(scriptPath, [], targetFolder, channel);
       vscode.window.showInformationMessage("Deploy finished");
-    } catch {
+    } catch (err) {
       vscode.window.showErrorMessage("Deploy script failed");
     }
   });
@@ -100,6 +100,28 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {}
+
+async function readTemplateFile(extPath: string, rel: string) {
+  const full = path.join(extPath, "src", "templates", "rust-contract", rel);
+  return fs.readFile(full, "utf8");
+}
+
+async function createNearRustTemplateFromFiles(extPath: string, baseDir: string, name: string) {
+  const projectDir = path.join(baseDir, name);
+  await fs.mkdir(path.join(projectDir, "src"), { recursive: true });
+  await fs.mkdir(path.join(projectDir, "scripts"), { recursive: true });
+  const cargo = await readTemplateFile(extPath, "Cargo.toml");
+  const lib = await readTemplateFile(extPath, path.join("src", "lib.rs"));
+  const deploy = await readTemplateFile(extPath, path.join("scripts", "deploy_testnet.sh"));
+  const cargoOut = cargo.replace(/\{\{crate_name\}\}/g, name);
+  const libOut = lib.replace(/\{\{crate_name\}\}/g, name);
+  const deployOut = deploy.replace(/\{\{crate_name\}\}/g, name);
+  await writeFile(path.join(projectDir, "Cargo.toml"), cargoOut);
+  await writeFile(path.join(projectDir, "src", "lib.rs"), libOut);
+  await writeFile(path.join(projectDir, "scripts", "deploy_testnet.sh"), deployOut);
+  await fs.chmod(path.join(projectDir, "scripts", "deploy_testnet.sh"), 0o755);
+  return projectDir;
+}
 
 async function detectContractFolder(root: string) {
   const candidates: string[] = [];

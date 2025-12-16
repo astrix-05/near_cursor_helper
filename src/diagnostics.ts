@@ -38,14 +38,15 @@ export function parseCargoJsonToDiagnostics(lines: string[], baseDir: string) {
     const msg = obj.message;
     if (!msg.spans || msg.spans.length === 0) continue;
     const isError = msg.level === "error";
-    if (!isError) continue;
+    const isWarning = msg.level === "warning";
+    if (!isError && !isWarning) continue;
     for (const sp of msg.spans) {
       if (sp.is_primary === false) continue;
       const file = sp.file_name || "";
       if (!file) continue;
       const start = new vscode.Position(Math.max(0, (sp.line_start || 1) - 1), Math.max(0, (sp.column_start || 1) - 1));
       const end = new vscode.Position(Math.max(0, (sp.line_end || sp.line_start || 1) - 1), Math.max(0, (sp.column_end || sp.column_start || 1) - 1));
-      const d = new vscode.Diagnostic(new vscode.Range(start, end), msg.rendered || msg.message || "", vscode.DiagnosticSeverity.Error);
+      const d = new vscode.Diagnostic(new vscode.Range(start, end), msg.rendered || msg.message || "", isError ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning);
       const url = docUrlFor(msg.message || msg.rendered || "");
       if (url) {
         d.code = { value: (msg.code && msg.code.code) || "near", target: vscode.Uri.parse(url) } as any;
