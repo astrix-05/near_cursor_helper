@@ -2,7 +2,7 @@
   "name": "near-cursor-helper",
   "displayName": "NEAR Cursor Helper",
   "description": "Cursor/VS Code helper for NEAR Rust contract scaffolding and deploy",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "workspace",
   "license": "MIT",
   "engines": {
