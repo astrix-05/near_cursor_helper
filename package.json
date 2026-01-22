@@ -17,6 +17,26 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "NEAR Cursor Helper",
+      "properties": {
+        "nearCursorHelper.networkId": {
+          "type": "string",
+          "enum": [
+            "testnet",
+            "mainnet",
+            "sandbox"
+          ],
+          "default": "testnet",
+          "description": "Target NEAR network for builds and deploys."
+        },
+        "nearCursorHelper.accountId": {
+          "type": "string",
+          "default": "",
+          "description": "Default NEAR account ID used for contract deployment (e.g. 'myaccount.testnet')."
+        }
+      }
+    },
     "commands": [
       {
         "command": "nearCursor.newRustContract",
@@ -33,12 +53,15 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "echo 'no lint configured'",
-    "typecheck": "tsc -p ./ --noEmit"
+    "typecheck": "tsc -p ./ --noEmit",
+    "test": "jest"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.11.30",
     "@types/vscode": "^1.90.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "typescript": "^5.6.3"
   }
 }
-

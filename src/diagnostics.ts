@@ -4,23 +4,27 @@ import * as vscode from "vscode";
  * Partial interface for Cargo's JSON message format.
  * See: https://doc.rust-lang.org/cargo/reference/external-tools.html#json-messages
  */
-type CargoMessage = {
-  reason?: string;
-  message?: {
-    rendered?: string;
-    message?: string;
-    code?: { code?: string } | null;
-    level?: string;
-    spans?: Array<{
-      file_name?: string;
-      line_start?: number;
-      line_end?: number;
-      column_start?: number;
-      column_end?: number;
-      is_primary?: boolean;
-    }>;
-  };
-};
+export interface CargoDiagnostic {
+    reason: string;
+    message?: {
+        code?: { code: string };
+        level: string;
+        message: string;
+        spans: Array<{
+            file_name: string;
+            line_start: number;
+            line_end: number;
+            column_start: number;
+            column_end: number;
+            is_primary: boolean;
+        }>;
+        rendered?: string;
+    };
+    target?: {
+        kind: string[];
+        name: string;
+    };
+}
 
 /**
  * Returns a documentation URL if the error text contains known keywords.
@@ -33,25 +37,36 @@ function docUrlFor(text: string) {
   return undefined;
 }
 
-/**
- * Parses lines of JSON output from `cargo build --message-format json`.
- * Returns a map of file paths to VS Code Diagnostics.
- * 
- * @param lines Array of JSON strings from cargo stdout
- * @param baseDir Project root directory to resolve relative paths
- */
 export function parseCargoJsonToDiagnostics(lines: string[], baseDir: string) {
   const map = new Map<string, vscode.Diagnostic[]>();
+  const toolchainErrors: string[] = [];
+
   for (const line of lines) {
-    let obj: CargoMessage | undefined;
+    let obj: CargoDiagnostic | undefined;
     try {
       obj = JSON.parse(line);
     } catch {
       continue;
     }
-    // Only interested in compiler messages with content
+    
+    // Detect generic toolchain errors (often not in "compiler-message" format)
+    if (obj && !obj.reason && (obj as any).message && typeof (obj as any).message === 'string') {
+        const raw = (obj as any).message as string;
+        if (raw.includes("linker") || raw.includes("wasm32-unknown-unknown")) {
+            toolchainErrors.push(raw);
+        }
+        continue;
+    }
+
+    // Standard compiler messages
     if (!obj || obj.reason !== "compiler-message" || !obj.message) continue;
     const msg = obj.message;
+    
+    // Check for toolchain hints in rendered message
+    if (msg.rendered && (msg.rendered.includes("wasm32-unknown-unknown") || msg.rendered.includes("rustup target add"))) {
+        toolchainErrors.push("Missing wasm32 target? Run: rustup target add wasm32-unknown-unknown");
+    }
+
     if (!msg.spans || msg.spans.length === 0) continue;
     
     // Filter for errors and warnings
@@ -88,5 +103,5 @@ export function parseCargoJsonToDiagnostics(lines: string[], baseDir: string) {
       map.set(file, arr);
     }
   }
-  return map;
+  return { map, toolchainErrors };
 }

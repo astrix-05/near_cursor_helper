@@ -9,9 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "sourceMap": true,
-    "types": ["node", "vscode"]
+    "types": ["node", "vscode", "jest"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/__tests__/**/*.ts", "src/__mocks__/**/*.ts"],
   "exclude": ["node_modules", ".vscode"]
 }
 

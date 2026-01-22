@@ -1,105 +1,74 @@
-# NEAR Cursor Helper
+# NEAR Dev Infra Helper for Cursor
 
-## Overview
-NEAR Cursor Helper is a VS Code/Cursor extension that accelerates NEAR smart contract development by providing intelligent scaffolding, opinionated templates, and streamlined build workflows. It helps you spin up production-ready NEAR Rust contracts in seconds and keeps build and diagnostics feedback inside your editor.
+> “A VS Code/Cursor extension that lets developers and AI agents scaffold, build, and deploy NEAR Rust contracts with one command.”
+
+## Why this matters for NEAR
+Onboarding to NEAR development often involves juggling multiple tools (`cargo`, `near-cli`, boilerplate templates). This extension acts as **infrastructure** that:
+1.  **Shortens the Inner Loop**: Scaffold, build, and deploy without leaving the editor.
+2.  **Improves Onboarding**: Provides opinionated, working Rust templates out of the box.
+3.  **Enables Automation**: Exposes a typed API (`NearExtensionApi`) that AI agents can use to autonomously write and deploy contracts.
 
 ## Features
-- Auto-generate NEAR Rust contract boilerplate with best practices
-- Built-in project structure following NEAR SDK conventions
-- One-click build and deploy workflows for NEAR testnet/mainnet (via scripts)
-- Integrated error diagnostics for common NEAR contract issues
-- Rust contract templates (lib.rs, Cargo.toml, helper scripts)
-- Pre-configured build scripts for `wasm32-unknown-unknown` target
-- Deploy scripts for both testnet and mainnet (customizable)
+- **NEAR Rust Scaffolding**: Generate production-ready contracts with `Cargo.toml`, `src/lib.rs`, and deploy scripts from file-based templates.
+- **Robust Build System**: Runs `cargo build` targeting `wasm32-unknown-unknown` with **structured diagnostics** (inline error reporting) and toolchain hints.
+- **Configurable Deployment**: Deploy directly to testnet/mainnet using settings (`networkId`, `accountId`) without hardcoded scripts.
+- **Agent-Friendly API**: Exports a full programmatic API (`createContract`, `build`, `deploy`) for other extensions or AI agents.
+- **Example & Tests**: Includes a reference project in `examples/basic-contract/` and Jest tests for reliability.
 
-## Requirements
-- VS Code **1.90.0+** (or Cursor IDE)
-- Node.js **16+**
-- Rust toolchain with `wasm32-unknown-unknown` target:
-  ```bash
-  rustup target add wasm32-unknown-unknown
-  ```
-- NEAR CLI **v4.0+**:
-  ```bash
-  npm install -g near-cli
-  ```
+## Quickstart
 
-## Installation
-1. **From VS Code Marketplace**
-   - Install from the Marketplace (link to be added when published).
-
-2. **From source**
-   ```bash
-   npm install
-   npm run compile
-   # Package with your preferred tool, e.g. vsce:
-   # vsce package
-   code --install-extension near-cursor-helper-*.vsix
-   ```
-
-## Commands
-### NEAR: New Rust Contract (Cursor)
-- Command ID: `nearCursor.newRustContract`
-- Prompts for a folder name.
-- Creates a new folder in the workspace root and scaffolds a NEAR Rust contract:
-  - `Cargo.toml` with `near-sdk` dependency, `edition = "2021"`, and `cdylib` crate type.
-  - `src/lib.rs` containing a minimal `HelloNear` contract using `#[near_bindgen]` that stores and reads a greeting string.
-  - `scripts/build.sh` to build a release Wasm for `wasm32-unknown-unknown`.
-  - Optional deploy scripts (e.g. `scripts/deploy_testnet.sh`) that use NEAR CLI and are easy to customize.
-
-### NEAR: Build & Deploy to Testnet (Cursor)
-- Command ID: `nearCursor.buildAndDeploy`
-- Asks you to pick a contract folder containing `Cargo.toml`.
-- Runs:
-  ```bash
-  cargo build --target wasm32-unknown-unknown --release --message-format json
-  ```
-- Streams both `stdout` and `stderr` to the `NEAR Cursor` Output channel.
-- Parses Cargo JSON output, surfaces Rust/NEAR errors as inline diagnostics, and shows a success/failure notification.
-- Deploy behavior is driven by the project’s scripts (for example, `scripts/deploy_testnet.sh` using NEAR CLI). You can adapt these scripts for testnet or mainnet.
-
-## Scaffolding Details
-The Rust contract template is based on current NEAR Rust SDK patterns:
-- Uses `near-sdk` 5.x and `#[near_bindgen]` (or the newer `near` macros, depending on template version).
-- Provides a simple `Contract` type with:
-  - A stored greeting string.
-  - Methods like `set_greeting` and `get_greeting`.
-- Includes comments in the generated `lib.rs` explaining the main NEAR concepts used.
-
-The generated `Cargo.toml`:
-- Targets Rust 2021 edition.
-- Sets `crate-type = ["cdylib"]` for Wasm contracts.
-- Uses release profile settings optimized for small Wasm size where appropriate.
-
-The build script:
-- Compiles to `wasm32-unknown-unknown` in release mode.
-- Optionally copies the resulting `.wasm` artifact into a `res/` directory for easier deployment.
-
-## Diagnostics & Logging
-- Build output is streamed in real time to the `NEAR Cursor` Output channel.
-- When using JSON-formatted Cargo output, the extension:
-  - Parses compiler messages.
-  - Maps errors and warnings to the correct Rust source files.
-  - Shows inline red/yellow squiggles via `vscode.DiagnosticCollection`.
-- Errors mentioning `near_sdk` or `wasm` are annotated with clickable codes that open the relevant NEAR Rust documentation.
-
-## Usage
-1. Open a folder in VS Code or Cursor.
-2. Run **NEAR: New Rust Contract (Cursor)** to scaffold a new NEAR Rust contract.
-3. Open the generated `src/lib.rs`, review or customize the contract.
-4. Run **NEAR: Build & Deploy to Testnet (Cursor)**:
-   - Select the scaffolded contract folder.
-   - Watch the `NEAR Cursor` Output channel for build logs.
-   - Fix any inline diagnostics that appear in your Rust files.
-5. Adjust deploy scripts (account ID, network, node URL) to target your desired NEAR environment.
-
-## Development
-To work on the extension itself:
+### Installation
 ```bash
+git clone https://github.com/your-repo/near_cursor_helper.git
+cd near_cursor_helper
 npm install
-npm run watch   # or: npm run compile
+npm run compile
 ```
-Then, in VS Code/Cursor:
-- Run the **Run Extension** launch configuration.
-- A new Extension Development Host window will open with the NEAR Cursor Helper extension loaded.
+Open in VS Code (`code .`) and press `F5` to launch the extension.
 
+### Usage
+1.  **Scaffold**: Run command `NEAR: New Rust Contract (Cursor)`. Enter a name (e.g., `my-contract`).
+2.  **Build & Deploy**: Run command `NEAR: Build & Deploy to Testnet (Cursor)`. Select your contract folder.
+3.  **Output**: Watch the **NEAR Cursor** output channel for build logs and transaction hashes.
+
+## Configuration
+Customize behavior via VS Code Settings (`settings.json`):
+
+| Setting | Default | Description |
+| :--- | :--- | :--- |
+| `nearCursorHelper.networkId` | `"testnet"` | Target network (`testnet`, `mainnet`, `sandbox`). |
+| `nearCursorHelper.accountId` | `""` | Your NEAR account ID for deployment (e.g. `alice.testnet`). |
+
+## Architecture
+This extension follows a modular Service-Oriented Architecture:
+
+### Services Layer (`src/services/`)
+- **`ScaffoldingService`**: Manages file-based templates (`src/templates/`) to generate contracts.
+- **`BuildService`**: Wraps `cargo` process execution, parsing JSON output into structured `BuildResult` and VS Code diagnostics.
+- **`DeployService`**: Handles deployment via `child_process` using environment variables (`NEAR_ENV`, `ACCOUNT_ID`).
+- **`ConfigService`**: Centralized access to extension settings.
+
+### API Layer (`src/api/index.ts`)
+Exposes a typed interface for automation:
+```typescript
+export interface NearExtensionApi {
+  createContract(name: string, path: string): Promise<void>;
+  build(path: string): Promise<BuildResult>;
+  deploy(path: string, accountId?: string): Promise<DeployResult>;
+  buildAndDeploy(path: string): Promise<{ build: BuildResult; deploy: DeployResult }>;
+}
+```
+
+### UI Layer (`src/extension.ts`)
+Registers VS Code commands (`nearCursor.newRustContract`, `nearCursor.buildAndDeploy`) that act as thin wrappers around the API.
+
+## Roadmap / Milestones
+- [x] **M1: Architecture Refactor**: Modular services, removal of hardcoded strings.
+- [x] **M2: Configuration**: `package.json` settings for network/account.
+- [x] **M3: Reliability**: Structured `BuildResult`, toolchain hints, better error parsing.
+- [x] **M4: Agent API**: Public `NearExtensionApi` for automation.
+
+### Future Work
+- Add `QuickFix` providers for common NEAR Rust errors.
+- Support TypeScript/JavaScript contracts.
+- Integrate directly with `near-cli-rs` via library calls instead of shell spawning.
